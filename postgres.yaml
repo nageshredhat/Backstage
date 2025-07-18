@@ -7,6 +7,9 @@ type: Opaque
 data:
   POSTGRES_USER: YmFja3N0YWdl           # base64 for "backstage"
   POSTGRES_PASSWORD: aHVudGVyMg==       # base64 for "hunter2"
+  POSTGRES_DB: YmFja3N0YWdl              # "backstage"
+  POSTGRES_HOST: cG9zdGdyZXMuYmFja3N0YWdl  # "postgres.backstage"
+  POSTGRES_PORT: NTQzMg==                # "5432"
 
 ---
 apiVersion: v1
