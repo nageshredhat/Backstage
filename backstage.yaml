@@ -1,0 +1,221 @@
+# ===================== Namespace =====================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backstage
+---
+# ===================== Secrets =====================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secrets
+  namespace: backstage
+type: Opaque
+data:
+  POSTGRES_USER: YmFja3N0YWdl        # "backstage"
+  POSTGRES_PASSWORD: aHVudGVyMg==     # "hunter2"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backstage-secrets
+  namespace: backstage
+type: Opaque
+data:
+  GITHUB_TOKEN: VG9rZW5Ub2tlblRva2VuVG9rZW5NYWxrb3ZpY2hUb2tlbg==
+---
+# ===================== Storage =====================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-storage
+  namespace: backstage
+  labels:
+    type: local
+spec:
+  storageClassName: standard     # updated from "manual"
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-storage-claim
+  namespace: backstage
+spec:
+  storageClassName: standard     # updated from "manual"
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# ===================== Postgres =====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: backstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13.2-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+          env:
+            - name: POSTGRES_HOST
+              value: postgres.backstage
+            - name: POSTGRES_PORT
+              value: "5432"
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresdb
+              subPath: data
+      volumes:
+        - name: postgresdb
+          persistentVolumeClaim:
+            claimName: postgres-storage-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: backstage
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+---
+# ===================== Backstage App =====================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: backstage
+data:
+  app-config.yaml: |
+    app:
+      baseUrl: http://localhost:3000
+
+    organization:
+      name: Opcito
+
+    backend:
+      title: My Backstage from Opcito
+      baseUrl: http://localhost:7007
+      listen:
+        port: 7007
+      cors:
+        origin:
+          - http://localhost:3000
+      database:
+        client: pg
+        connection:
+          host: ${POSTGRES_HOST}
+          port: ${POSTGRES_PORT}
+          user: ${POSTGRES_USER}
+          password: ${POSTGRES_PASSWORD}
+
+    integrations:
+      github:
+        - host: github.com
+          token: "<<GITHUB_TOKEN>>"   # GitHub token from secret
+
+    auth:
+      environment: development
+      allowGuestAccess: true
+      providers:
+        github:
+          development:
+            clientId: "<<GITHUB_CLIENT_ID>>"  # GitHub OAuth App Client ID
+            clientSecret: "<<GITHUB_CLIENT_SECRET>>" # GitHub OAuth App Client Secret
+            signIn:
+              resolvers:
+                - resolver: usernameMatchingUserEntityName
+                  dangerouslyAllowSignInWithoutUserInCatalog: true
+
+    enabled:
+      github: true
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage
+  namespace: backstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backstage
+  template:
+    metadata:
+      labels:
+        app: backstage
+    spec:
+      containers:
+        - name: backstage
+          image: ghcr.io/backstage/backstage:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 7007
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+            - secretRef:
+                name: backstage-secrets
+          volumeMounts:
+            - name: app-config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: app-config
+          configMap:
+            name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage
+  namespace: backstage
+spec:
+  selector:
+    app: backstage
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secrets
+  namespace: backstage
+type: Opaque
+stringData:
+  POSTGRES_USER: backstage
+  POSTGRES_PASSWORD: hunter2
+  POSTGRES_HOST: postgres.backstage
+  POSTGRES_PORT: "5432"
+
