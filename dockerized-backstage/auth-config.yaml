@@ -1,0 +1,22 @@
+auth:
+  environment: development
+  # Session/cookie secret for the auth plugin
+  secret: ${AUTH_SECRET}
+
+  providers:
+    # Enable Guest so the app can sign in even without GitHub
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+      signIn:
+        # Issue a token for user:default/guest without requiring a catalog lookup
+        resolver:
+          resolver: guest:guest
+
+    # GitHub OAuth – optional; keep if you want GitHub sign-in too
+    github:
+      development:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+      production:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}

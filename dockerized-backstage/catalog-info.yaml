@@ -1,0 +1,106 @@
+# ---------- Team (owner) ----------
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: devops-team
+  title: DevOps Team
+spec:
+  type: team
+  profile:
+    displayName: DevOps Team
+  children: []
+
+---
+# ---------- System that groups the components ----------
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: devops-assessment
+  description: System for the DevOps Assessment Platform
+spec:
+  owner: group:devops-team
+
+---
+# ---------- Main service ----------
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: devops-assessment-platform
+  description: DevOps Assessment Platform with Backend API, Frontend, and Backstage Integration
+  annotations:
+    github.com/project-slug: pritamshende/Devops-assessment-new
+    backstage.io/techdocs-ref: dir:.
+    # CI/CD: point to your GitHub Actions workflow file(s)
+    # If you have multiple, separate by commas, e.g. "build.yml,deploy.yml"
+    github.com/workflows: build.yml
+  tags: [python, flask, react, docker, devops, assessment]
+  links:
+    - url: https://github.com/pritamshende/Devops-assessment-new
+      title: GitHub Repository
+      icon: github
+spec:
+  type: service
+  lifecycle: production
+  owner: group:devops-team
+  system: devops-assessment
+  providesApis:
+    - devops-assessment-api
+  dependsOn:
+    - resource:mysql-database
+    - resource:redis-cache
+
+---
+# ---------- API exposed by the service ----------
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: devops-assessment-api
+  description: DevOps Assessment Backend API
+  tags: [python, flask, rest-api]
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:devops-team
+  definition:
+    $text: |
+      openapi: 3.0.0
+      info:
+        title: DevOps Assessment API
+        version: 1.0.0
+        description: Backend API for DevOps Assessment Platform
+      paths:
+        /health:
+          get:
+            summary: Health check endpoint
+        /api/auth/login:
+          post:
+            summary: User authentication
+        /api/questionnaire:
+          get:
+            summary: Get questionnaires
+
+---
+# ---------- MySQL resource ----------
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: mysql-database
+  description: MySQL Database for DevOps Assessment
+  tags: [mysql, database]
+spec:
+  type: database
+  owner: group:devops-team
+  system: devops-assessment
+
+---
+# ---------- Redis resource ----------
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: redis-cache
+  description: Redis Cache for DevOps Assessment
+  tags: [redis, cache]
+spec:
+  type: cache
+  owner: group:devops-team
+  system: devops-assessment

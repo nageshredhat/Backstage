@@ -1,0 +1,72 @@
+app:
+  title: DevOps Assessment Platform
+  baseUrl: http://127.0.0.1:7007
+
+organization:
+  name: DevOps Team
+
+backend:
+  baseUrl: http://127.0.0.1:7007
+  listen:
+    port: 7007
+    host: 0.0.0.0
+
+  # Token signing/verification for backend-issued tokens (incl. permissions)
+  auth:
+    keys:
+      - secret: ${BACKEND_SECRET}
+
+  # CORS to match the same origin
+  cors:
+    origin: http://127.0.0.1:7007
+    credentials: true
+
+  database:
+    client: pg
+    connection:
+      host: postgres
+      port: 5432
+      user: backstage
+      password: ${POSTGRES_PASSWORD}
+      database: backstage_plugin_catalog
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+      apiBaseUrl: https://api.github.com
+
+catalog:
+  rules:
+    - allow: [Component, System, API, Resource, Location, Group, User]
+  # Ensure your local catalog-info.yaml is loaded
+  locations:
+    - type: file
+      target: /app/catalog-info.yaml
+  # Optional GitHub provider – keep if you want to ingest from your org
+  providers:
+    github:
+      default:
+        organization: pritamshende
+        catalogPath: /catalog-info.yaml
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 3 }
+
+scaffolder:
+  github:
+    token: ${GITHUB_TOKEN}
+    visibility: public
+
+techdocs:
+  builder: 'local'
+  generators:
+    techdocs: 'local'
+  publisher:
+    type: 'local'
+
+# Optional: Show GitHub Actions tab
+ci:
+  github:
+    host: github.com
+    token: ${GITHUB_TOKEN}

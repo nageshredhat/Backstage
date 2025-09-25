@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: backstage_plugin_catalog
+      POSTGRES_USER: backstage
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-backstage123}
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks: [backstage_network]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backstage:
+    image: ghcr.io/backstage/backstage:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      # Load both configs
+      APP_CONFIG: /app/app-config.yaml,/app/auth-config.yaml
+    ports:
+      - "127.0.0.1:7007:7007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [backstage_network]
+    volumes:
+      - ./app-config.yaml:/app/app-config.yaml:ro
+      - ./auth-config.yaml:/app/auth-config.yaml:ro
+      - ./catalog-info.yaml:/app/catalog-info.yaml:ro
+      - backstage_data:/app/static/docs
+
+networks:
+  backstage_network:
+    driver: bridge
+
+volumes:
+  backstage_data:
