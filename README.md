@@ -18,6 +18,19 @@ This repository contains manifests and instructions to run Backstage locally ins
 
 ---
 
+### Key Files and Folders
+
+-   **README.md**: This file; contains all instructions to set up and run Backstage locally.
+    
+-   **progress.md**: Tracks Nagesh's progress on the project, including manifest creation, pod deployment, issues with GitHub credentials, and scaffolder template integration.
+    
+-   **archive/**: (Optional) Folder to store old versions, backups, or exported data.
+    
+-   **backstage.yaml**: Kubernetes manifest for deploying Backstage and its dependencies (Postgres, services, secrets, etc.) on Minikube.
+    
+-   **dockerized-backstage/**: Directory containing Docker setup for Backstage (Dockerfile, build scripts, configuration for containerized deployment).
+---
+
 ## Prerequisites (brief)
 
 * A machine with either **Windows + WSL2** (Ubuntu) or **macOS**.
